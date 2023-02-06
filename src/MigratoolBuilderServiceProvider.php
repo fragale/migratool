@@ -9,10 +9,7 @@ class MigratoolServiceProvider extends ServiceProvider
 
 
   protected $owncommands = [
-      'Fragale\Modules\Commands\ModuleInit',
-      'Fragale\Modules\Commands\ModuleMake',
-      'Fragale\Modules\Commands\ModuleSeed',
-      'Fragale\Modules\Commands\ModuleMakeIndexJS',
+      'Fragale\Migratool\Commands\MigratoolJet',
   ];
 
     /**

@@ -14,21 +14,19 @@ class MigratoolJet extends BaseBuilder
    * @var string
    */
   protected $signature = 'migratool:jet
-                                        {module? : nombre del modulo [opcional]}
-                                        {table? : nombre de la tabla [opcional]}
-                                        {--auto : no hace preguntas y ejecuta en modo auto}
-                                        {--remove : elimina el file de migracion (no funciona todavia)}
-                                        {--list : muestra un listado de las migraciones en la DB}
-                                        {--find= : muestra un listado de las migraciones que coincidan en la DB}
-                                        {--purge : elimina las migraciones encontradas con --find}
-                                        {--down= : hace un down de la migracion segun el #id indicado}';
+                                        {--auto : asks no questions and runs in auto mode}
+                                        {--remove : delete the migration file (does not work yet)}
+                                        {--list : displays a list of migrations in the DB}
+                                        {--find= : displays a list of matching migrations in the DB}
+                                        {--purge : remove migrations found with --find}
+                                        {--down= : makes a down of the migration according to the indicated #id}';
 
   /**
    * The console command description.
    *
    * @var string
    */
-  protected $description = 'Genera migracion';
+  protected $description = 'Migrations Jet Tools';
   protected $table;
 
 
@@ -59,9 +57,6 @@ class MigratoolJet extends BaseBuilder
     $this->purge  = $this->option('purge');
 
 
-    // dump($this->argument('module'));
-    // dump($this->argument('table'));
-
     /*list migrations in order and exit*/
     if ($this->list or $this->find) {
       $this->listMigrations();
@@ -74,41 +69,8 @@ class MigratoolJet extends BaseBuilder
 
     if ($this->down) {
       $this->downMigration();
-      //exit();
     }
 
-    if ($this->argument('module') and $this->argument('table')) { /*Seguir aqui*/
-
-
-      if (!$this->down) {
-
-        $this->setPaths($this->argument('module'));
-
-        $this->build();
-
-        if ($this->hasPivots()) {
-          \Artisan::call('builder:migration_pivot',  ['module' => $this->argument('module'), 'table' => $this->argument('table'), '--auto' => 'true']);
-        }
-      } else {
-        $this->info("Nothing to do.");
-      }
-    }
-  }
-
-
-  protected function hasPivots()
-  {
-    if (array_key_exists('relations', $this->crud)) {
-
-      foreach ($this->crud['relations'] as $relationName => $field) {
-        if ($field['relation_type'] == 'belongsToMany') {
-
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 
 
@@ -185,120 +147,4 @@ class MigratoolJet extends BaseBuilder
   }
 
 
-  protected function build()
-  {
-    $this->loadCRUDdefinitions();
-    $this->info("Building the migration $this->migrationFileName ...");
-    // $this->setMigrationName();
-
-    if (!array_key_exists('migration', $this->crud)) {
-      $this->info("nothing to do!!, the property migration is missing on this CRUD.");
-      return false;
-    }
-
-    if (is_string($this->crud['migration'])) {
-
-      $this->migrationTemplateFileName = $this->crud_template_path . '/' . $this->crud['migration'] . '.php';
-    } else {
-
-      $this->migrationTemplateFileName = $this->builder_templates_path . '/Migrations/create_table.php';
-    }
-
-    $filename = $this->migrations_path . '/' . $this->migrationFileName;
-
-    $this->showInfoHeader($filename, $this->migrationFileName);
-
-    $this->tryToCopyFile($this->file, $this->migrationTemplateFileName, $this->migrations_path, $this->migrationFileName);
-
-    $template = $this->getTemplate($filename);
-
-    $translations = [
-      'author' => $this->projectOwner,
-      'project' => $this->projectName,       
-      'model' => $this->model,
-      'Model' => $this->Model,
-      'models' => $this->models,
-      'Models' => $this->Models,
-      'Module' => $this->Module,
-      'module' => $this->module,
-      'foreigns' => $this->makeFieldTail('foreigns', $this->crud),
-      'index' => $this->makeFieldTail('indexes', $this->crud),
-      'migrationFields' => $this->makeMigrationFields($this->crud['fields']) . PHP_EOL . "\t\t\t\t\t\t" . $this->makeFieldTail('fieldsExtra', $this->crud),
-      'className' => $this->migrationClassName,
-      'primary' => $this->valueOrFail($this->migrationExtras, 'primary', "bigIncrements('id')"),  // por ejemplo se puede usar increments('id');
-
-    ];
-
-    $this->saveTemplate($filename, $this->translateTemplate($template, $translations));
-
-
-    $this->info("done.");
-  }
-
-
-  /**
-   * Make de static rules section for the model
-   *
-   * @return string
-   */
-
-  public function makeMigrationFields($fields)
-  {
-
-    $this->info("Making migration fields ...");
-
-    $migrationFields = [];
-
-    foreach ($fields as $field) {
-      $name = $field['name'];
-
-      if (array_key_exists('dbType', $field)) {
-        $type = $field['dbType'];
-      } else {
-        $type = $this->translateType($field['type']);
-      }
-
-      $prec = '';
-      if (array_key_exists('prec', $field)) {
-        $prec = ', ' . $field['prec'];
-      }
-
-      $modifier = '';
-      if (array_key_exists('modifier', $field)) {
-        $modifier = '->' . $field['modifier'];
-      }
-
-      $migrationFields[] = "\$table->$type('$name'$prec)$modifier;";
-    }
-
-    /*si hay relaciones polimorficas agrega los morphs*/
-    $morphs = $this->makeMorphFields();
-    if ($morphs != '') {
-
-      $migrationFields[] = $morphs;
-    }
-
-    return implode(PHP_EOL . "\t\t\t", $migrationFields);
-  }
-
-
-
-  public function makeMorphFields()
-  {
-
-    $migrationFields = [];
-
-    if (array_key_exists('relations', $this->crud)) {
-
-      foreach ($this->crud['relations'] as $name => $relation) {
-
-        if ($relation['relation_type'] == 'morphTo' and $this->valueOrFail($relation, 'migrate', false)) {
-
-          $migrationFields[] = "\$table->morphs('$name');";
-        }
-      }
-    }
-
-    return (empty($migrationFields)) ? '' : implode(PHP_EOL . "\t\t\t\t\t\t", $migrationFields);
-  }
 }
