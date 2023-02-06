@@ -1,0 +1,31 @@
+{
+    "name": "fragale/migratool",
+    "description": "Laravel migrations tools",
+    "type": "helpers",
+    "license": "MIT",
+    "authors": [
+      {
+          "name": "Maximiliano Fragale",
+          "email": "fragale@gmail.com",
+          "homepage": "https://twitter.com/mjfragale",
+          "role": "Project leader & Developer"
+      }
+    ],
+    "require": {},
+    "extra": {
+      "laravel": {
+        "providers": [
+          "Fragale\\Modules\\MigratoolServiceProvider"
+        ]
+      }
+    },
+    "autoload": {
+      "files": [
+          "src/helpers/helpers.php"
+      ],
+      "psr-4": {
+        "Fragale\\Migratool\\": "src/",
+        "Fragale\\Migratool\\Commands\\": "src/Commands"
+      }
+    }
+}
