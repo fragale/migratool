@@ -4,9 +4,10 @@ namespace Fragale\Migratool\Commands;
 
 use DB;
 use Illuminate\Support\Str;
+use Illuminate\Console\Command;
 
 
-class MigratoolJet extends BaseBuilder
+class MigratoolJet extends Command
 {
   /**
    * The name and signature of the console command.
