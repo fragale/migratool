@@ -10,6 +10,7 @@ class MigratoolServiceProvider extends ServiceProvider
 
   protected $owncommands = [
       'Fragale\Migratool\Commands\MigratoolJet',
+      'Fragale\Migratool\Commands\DataPackageSeeder',
   ];
 
     /**
